@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Loading Page + Flappy Bird + Cat Generator</title>
+  <style>
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background-color: #111;
+      color: #fff;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    /* ==== Loading Bar ==== */
+    .loading-bar {
+      display: flex;
+      gap: 4px;
+      margin-top: 20px;
+    }
+    .segment {
+      width: 20px;
+      height: 20px;
+      background-color: #444;
+      transition: background-color 0.3s ease;
+    }
+    .segment.filled {
+      background-color: rgb(104, 105, 104);
+    }
+    #loadingText {
+      font-size: 1.2em;
+      opacity: 0;
+      transition: opacity 0.5s ease;
+      margin-top: 10px;   
+    }
+
+    /* ==== Skip Button ==== */
+    #skipBtn {
+      position: absolute;
+      padding: 10px 20px;
+      background-color: rgb(129, 69, 81);
+      color: white;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      font-size: 1em;
+      transition: top 0.3s, left 0.3s;
+    }
+
+    /* ==== Right Click Button ==== */
+    #rightBtn {
+      position: fixed;
+      right: 20px;
+      top: 50%;
+      transform: translateY(-50%);
+      padding: 10px 20px;
+      background: teal;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      color: white;
+    }
+
+    /* ==== Cat Image Box ==== */
+    #catBox {
+      position: fixed;
+      bottom: 10px;
+      left: 10px;
+      width: 100px;
+      height: 100px;
+      border: 2px solid #fff;
+      overflow: hidden;
+    }
+    #catBox img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    /* ==== Flappy Bird Container ==== */
+    #flappyContainer {
+      position: absolute;
+      left: 20px;
+      top: 200px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    #flappyCanvas {
+      background: skyblue;
+      display: none;
+    }
+    #startFlappy {
+      margin-bottom: 10px;
+      padding: 5px 15px;
+      background: orange;
+      border: none;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Loading bar + Skip -->
+  <div class="loading-bar" id="loadingBar"></div>
+  <div id="loadingText">Starting...</div>
+  <button id="skipBtn">Skip</button>
+
+  <!-- Flappy Bird Left Side -->
+  <div id="flappyContainer">
+    <button id="startFlappy">Start Flappy Bird</button>
+    <canvas id="flappyCanvas" width="200" height="300"></canvas>
+  </div>
+
+  <!-- Right Button -->
+  <button id="rightBtn">Clicks: 0</button>
+
+  <!-- Cat Box -->
+  <div id="catBox"></div>
+
+  <script>
+    /* ======================
+       LOADING BAR
+    ====================== */
+    const loadingBar = document.getElementById("loadingBar");
+    const loadingText = document.getElementById("loadingText");
+    const messages = [
+      "Almost there",
+      "Wait a minute",
+      "Getting close",
+      "We are nowhere there",
+      "Lost all hope",
+      "Do not give up"
+    ];
+
+    for (let i = 0; i < 10; i++) {
+      const seg = document.createElement("div");
+      seg.classList.add("segment");
+      loadingBar.appendChild(seg);
+    }
+    const segments = document.querySelectorAll(".segment");
+
+    let segIndex = 0;
+    function fillNextSegment() {
+      if (segIndex < segments.length) {
+        segments[segIndex].classList.add("filled");
+        segIndex++;
+        if (segIndex === segments.length) {
+          // Show text after bar is completely filled
+          setTimeout(() => {
+            let msgIndex = 0;
+            const msgInterval = setInterval(() => {
+              loadingText.style.opacity = 0;
+              setTimeout(() => {
+                loadingText.textContent = messages[msgIndex];
+                loadingText.style.opacity = 1;
+              }, 500);
+              msgIndex++;
+              if (msgIndex >= messages.length) clearInterval(msgInterval);
+            }, 1500);
+          }, 500);
+        }
+      }
+    }
+    setInterval(fillNextSegment, 800);
+
+    /* ======================
+       RUNAWAY SKIP BUTTON
+    ====================== */
+    const skipBtn = document.getElementById("skipBtn");
+    const centerX = window.innerWidth / 2 - skipBtn.offsetWidth / 2;
+    const centerY = window.innerHeight / 2 - skipBtn.offsetHeight / 2;
+    skipBtn.style.left = centerX + "px";
+    skipBtn.style.top = centerY + "px";
+
+    document.addEventListener("mousemove", (e) => {
+      const btnRect = skipBtn.getBoundingClientRect();
+      const distX = e.clientX - (btnRect.left + btnRect.width / 2);
+      const distY = e.clientY - (btnRect.top + btnRect.height / 2);
+      const distance = Math.sqrt(distX * distX + distY * distY);
+      if (distance < 100) {
+        const randX = Math.random() * (window.innerWidth - skipBtn.offsetWidth);
+        const randY = Math.random() * (window.innerHeight - skipBtn.offsetHeight);
+        skipBtn.style.left = randX + "px";
+        skipBtn.style.top = randY + "px";
+      }
+    });
+
+    skipBtn.addEventListener("click", () => {
+      alert("Skipped!");
+    });
+
+    /* ======================
+       CAT IMAGE GENERATOR
+    ====================== */
+    const catImages = [
+      // ADD YOUR CAT IMAGE PATHS/URLs HERE
+      "cats/cat1.jpg",
+      "cats/cat2.jpg",
+      "cats/cat3.jpg"
+    ];
+    const catBox = document.getElementById("catBox");
+
+    /* ======================
+       RIGHT BUTTON
+    ====================== */
+    let clickCount = 0;
+    let flappyMode = false;
+    const rightBtn = document.getElementById("rightBtn");
+
+    rightBtn.addEventListener("click", () => {
+      if (!flappyMode) {
+        // Normal Mode
+        clickCount++;
+        rightBtn.textContent = "Clicks: " + clickCount;
+        const randomCat = catImages[Math.floor(Math.random() * catImages.length)];
+        catBox.innerHTML = `<img src="${randomCat}">`;
+      } else {
+        // Flappy Mode
+        birdVelocity = -5; // Jump
+      }
+    });
+
+    /* ======================
+       FLAPPY BIRD
+    ====================== */
+    const canvas = document.getElementById("flappyCanvas");
+    const ctx = canvas.getContext("2d");
+    let birdY, birdVelocity, pipes, score, gameLoop;
+
+    function startFlappyGame() {
+      birdY = 150;
+      birdVelocity = 0;
+      pipes = [];
+      score = 0;
+      gameLoop = setInterval(updateFlappy, 20);
+    }
+
+    function stopFlappyGame() {
+      clearInterval(gameLoop);
+    }
+
+    function updateFlappy() {
+      birdVelocity += 0.2;
+      birdY += birdVelocity;
+
+      // Pipes
+      if (pipes.length === 0 || pipes[pipes.length - 1].x < 120) {
+        const gapY = Math.random() * 150 + 50;
+        pipes.push({ x: 200, gapY });
+      }
+      pipes.forEach(p => p.x -= 2);
+
+      // Collision & Score
+      pipes.forEach(p => {
+        if (p.x < 20 && p.x > 0) score++;
+        if (
+          10 < p.x + 20 && 30 > p.x && 
+          (birdY < p.gapY - 40 || birdY > p.gapY + 40)
+        ) {
+          stopFlappyGame();
+          alert("Game Over! Score: " + score);
+          flappyMode = false;
+          canvas.style.display = "none";
+        }
+      });
+
+      // Draw
+      ctx.clearRect(0, 0, 200, 300);
+      ctx.fillStyle = "yellow";
+      ctx.fillRect(10, birdY, 20, 20);
+      ctx.fillStyle = "green";
+      pipes.forEach(p => {
+        ctx.fillRect(p.x, 0, 20, p.gapY - 40);
+        ctx.fillRect(p.x, p.gapY + 40, 20, 300 - p.gapY - 40);
+      });
+    }
+
+    /* Start/Stop Button */
+    const startFlappyBtn = document.getElementById("startFlappy");
+    startFlappyBtn.addEventListener("click", () => {
+      if (!flappyMode) {
+        flappyMode = true;
+        clickCount = 0;
+        rightBtn.textContent = "Flap!";
+        canvas.style.display = "block";
+        startFlappyGame();
+      } else {
+        flappyMode = false;
+        stopFlappyGame();
+        canvas.style.display = "none";
+        rightBtn.textContent = "Clicks: " + clickCount;
+      }
+    });
+  </script>
+</body>
+</html>
+ 
