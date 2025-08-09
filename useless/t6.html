@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+  <title>Loading + Minecraft Short + Skip</title>
+  <style>
+    body, html {
+      margin: 0;
+      padding: 0;
+      height: 100%;
+      font-family: Arial, sans-serif;
+      background: #111;
+      color: #fff;
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-start;
+      align-items: center;
+      overflow: hidden;
+    }
+    .loading-bar {
+      display: flex;
+      gap: 6px;
+      margin: 16px 0 8px;
+    }
+    .segment {
+      width: 20px;
+      height: 20px;
+      background: #333;
+      border-radius: 4px;
+      transition: background 0.35s ease;
+    }
+    .segment.filled {
+      background: rgb(123, 124, 123);
+    }
+    #loadingText {
+      font-size: 16px;
+      margin-bottom: 12px;
+      opacity: 1;
+      transition: opacity 0.45s ease;
+      min-height: 22px;
+      text-align: center;
+    }
+    .video-container {
+      flex: 1;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      width: 100%;
+      max-width: 480px;
+    }
+    .video-container iframe {
+      width: 100%;
+      height: auto;
+      aspect-ratio: 9/16;
+      border: none;
+    }
+    #skipBtn {
+      position: absolute;
+      bottom: 40px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 120px;
+      height: 44px;
+      background: #515151;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      font-size: 15px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: left 0.22s ease, top 0.22s ease;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      z-index: 50;
+    }
+    @media (max-width: 420px) {
+      .loading-bar { gap: 4px; }
+      .segment { width: 18px; height: 18px; }
+      #skipBtn { width: 100px; height: 40px; font-size: 14px; }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="loading-bar" id="loadingBar"></div>
+  <div id="loadingText">Almost there...</div>
+
+  <div class="video-container">
+    <!-- Embedded Minecraft short set to autoplay, muted, loop -->
+    <iframe src="https://www.youtube.com/embed/u7kdVe8q5zs?autoplay=1&mute=1&loop=1&playlist=u7kdVe8q5zs"
+            title="Minecraft short"
+            allow="autoplay; encrypted-media"
+            allowfullscreen>
+    </iframe>
+  </div>
+
+  <button id="skipBtn">Skip</button>
+
+<script>
+// === Loading bar + messages ===
+const messages = ["Almost there", "Wait a minute", "Getting close", "We are nowhere there", "Lost all hope", "Do not give up"];
+const loadingBar = document.getElementById('loadingBar');
+const loadingText = document.getElementById('loadingText');
+
+for (let i = 0; i < 10; i++) {
+  const seg = document.createElement('div');
+  seg.className = 'segment';
+  loadingBar.appendChild(seg);
+}
+const segments = document.querySelectorAll('.segment');
+
+let segIndex = 0, messageIndex = 0;
+
+function fillNext() {
+  segments[segIndex].classList.add('filled');
+  if ((segIndex + 1) % 5 === 0) {
+    loadingText.style.opacity = 0;
+    setTimeout(() => {
+      loadingText.textContent = messages[messageIndex];
+      loadingText.style.opacity = 1;
+      messageIndex = (messageIndex + 1) % messages.length;
+    }, 450);
+  }
+  segIndex++;
+  if (segIndex >= segments.length) {
+    setTimeout(() => {
+      segments.forEach(s => s.classList.remove('filled'));
+      segIndex = 0;
+    }, 500);
+  }
+}
+const FILL_INTERVAL = 800;
+let fillTimer = setInterval(fillNext, FILL_INTERVAL);
+
+// === Skip button wiggle + run away ===
+const skipBtn = document.getElementById('skipBtn');
+let lastMove = 0;
+const STAY_TIMEOUT = 220;
+const AVOID_DIST = 110;
+
+function moveSkipRandom() {
+  const now = Date.now();
+  if (now - lastMove < STAY_TIMEOUT) return;
+  lastMove = now;
+  const btnW = skipBtn.offsetWidth, btnH = skipBtn.offsetHeight, margin = 8;
+  const maxX = window.innerWidth - btnW - margin;
+  const maxY = window.innerHeight - btnH - margin;
+  const randX = Math.random() * maxX + margin;
+  const randY = Math.random() * maxY + margin;
+
+  skipBtn.animate(
+    [{ transform: 'translateY(0)' }, { transform: 'translateY(-15px)' }, { transform: 'translateY(0)' }],
+    { duration: 200, easing: 'ease-out' }
+  );
+  setTimeout(() => {
+    skipBtn.style.transform = 'none';
+    skipBtn.style.left = randX + 'px';
+    skipBtn.style.top = randY + 'px';
+    skipBtn.style.bottom = 'auto';
+  }, 200);
+}
+
+document.addEventListener('mousemove', e => {
+  const rect = skipBtn.getBoundingClientRect();
+  const dx = e.clientX - (rect.left + rect.width/2);
+  const dy = e.clientY - (rect.top + rect.height/2);
+  const dist = Math.hypot(dx, dy);
+  if (dist < AVOID_DIST) moveSkipRandom();
+});
+window.addEventListener('touchstart', () => moveSkipRandom(), { passive: true });
+
+skipBtn.addEventListener('click', () => {
+  clearInterval(fillTimer);
+  alert('Skipped!');
+});
+window.addEventListener('resize', () => {
+  const r = skipBtn.getBoundingClientRect();
+  const mx = window.innerWidth - r.width - 8;
+  const my = window.innerHeight - r.height - 8;
+  if (r.left > mx) skipBtn.style.left = mx + 'px';
+  if (r.top > my) skipBtn.style.top = my + 'px';
+});
+</script>
+
+</body>
+</html>
