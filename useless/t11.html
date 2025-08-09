@@ -1,15 +1,14 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="utf-8" />
-  <title>Combined Loading + Video + Flappy Bird + Cat Generator</title>
+  <title>Combined Loading + Video + Flappy Bird + Cat Generator + Bouncing Text</title>
   <style>
     /* === General styles === */
     html, body {
       height: 100%;
       margin: 0;
-      background: #111;
+      background: #373636;
       color: #fff;
       font-family: Arial, sans-serif;
       overflow-x: hidden;
@@ -47,7 +46,7 @@
     #loadingText {
       font-size: 16px;
       margin-top: 8px;
-      color: #1c857a;
+      color: #1bebd6;
       opacity: 1;
       transition: opacity 0.45s ease;
       text-align: center;
@@ -120,31 +119,36 @@
       flex-direction: column;
       align-items: center;
       z-index: 50;
+      background: #263238;
+      padding: 10px;
+      border-radius: 8px;
+      box-shadow: 0 0 12px #000a;
     }
     #flappyCanvas {
-      background: skyblue;
-      display: none;
+      background: #70c5ce;
       border-radius: 8px;
       box-shadow: 0 0 8px #222;
+      border: 2px solid #333;
+      display: block;
     }
     #startFlappy {
       margin-bottom: 10px;
-      padding: 5px 15px;
-      background: orange;
+      padding: 8px 15px;
+      background: #4caf50;
       border: none;
       cursor: pointer;
       border-radius: 6px;
       font-weight: bold;
       color: #111;
+      width: 100%;
     }
 
     /* === Right Button (Clicks) === */
-    #rightBtn {
+    #randomBtn {
       position: fixed;
       right: 20px;
-      top: 50%;
-      transform: translateY(-50%);
-      padding: 10px 20px;
+      top: 20px;
+      padding: 10px 16px;
       background: teal;
       border: none;
       border-radius: 5px;
@@ -153,26 +157,44 @@
       font-weight: bold;
       z-index: 50;
       user-select: none;
+      box-shadow: 0 0 6px #005050aa;
     }
 
     /* === Cat Image Box === */
-    #catBox {
+    #catContainer {
       position: fixed;
-      bottom: 10px;
-      left: 10px;
-      width: 100px;
-      height: 100px;
+      right: 20px;
+      bottom: 20px;
+      width: 150px;
+      height: 150px;
       border: 2px solid #fff;
       overflow: hidden;
       border-radius: 8px;
-      box-shadow: 0 0 8px #222;
+      box-shadow: 0 0 8px #302e2e;
+      background: #222;
       z-index: 50;
     }
-    #catBox img {
+    #catContainer img {
       width: 100%;
-      height: 100%;
-      object-fit: cover;
+      height: auto;
       user-select: none;
+      pointer-events: none;
+      display: block;
+    }
+
+    /* === Floating text that bounces === */
+    #floatingText {
+      position: fixed;
+      top: 50px;
+      left: 50px;
+      font-size: 24px;
+      font-weight: bold;
+      color: #590bc6;
+      user-select: none;
+      pointer-events: none;
+      z-index: 150;
+      white-space: nowrap;
+      text-shadow: 1px 1px 2px rgb(25, 97, 222);
     }
   </style>
 </head>
@@ -193,14 +215,17 @@
   <!-- Flappy Bird -->
   <div id="flappyContainer">
     <button id="startFlappy">Start Flappy Bird</button>
-    <canvas id="flappyCanvas" width="200" height="300"></canvas>
+    <canvas id="flappyCanvas" width="300" height="400"></canvas>
   </div>
 
-  <!-- Right side clicks button -->
-  <button id="rightBtn">Clicks: 0</button>
+  <!-- Right side random cat button -->
+  <button id="randomBtn">Random (0)</button>
 
   <!-- Cat Box -->
-  <div id="catBox"></div>
+  <div id="catContainer"></div>
+
+  <!-- Floating bouncing text -->
+  <div id="floatingText">LOADING...</div>
 
   <script>
     /* ===== Loading bar + messages ===== */
@@ -250,7 +275,7 @@
     const FILL_INTERVAL = 800;
     let fillTimer = setInterval(fillNextSegment, FILL_INTERVAL);
 
-    /* ===== Skip button: jumps + runs away ===== */
+    /* ===== Skip button: runs away from mouse pointer ===== */
     const skipBtn = document.getElementById('skipBtn');
     let lastMove = 0;
     const MOVE_COOLDOWN_MS = 220;
@@ -321,106 +346,156 @@
       if (rect.top > maxY) skipBtn.style.top = Math.max(8, maxY) + 'px';
     });
 
-    /* ===== Cat images + Right button logic ===== */
-    const catImages = [
-      // Replace these paths with actual URLs or local relative paths if hosted
-      "https://placekitten.com/100/100",
-      "https://placekitten.com/101/100",
-      "https://placekitten.com/102/100"
-    ];
-    const catBox = document.getElementById('catBox');
-
+    /* ===== Random cat button + display cat images ===== */
+    const randomBtn = document.getElementById('randomBtn');
+    const catContainer = document.getElementById('catContainer');
     let clickCount = 0;
-    let flappyMode = false;
-    const rightBtn = document.getElementById('rightBtn');
+    const catImages = [
+      "https://placekitten.com/150/150",
+      "https://placekitten.com/151/150",
+      "https://placekitten.com/152/150"
+    ];
 
-    rightBtn.addEventListener('click', () => {
-      if (!flappyMode) {
-        clickCount++;
-        rightBtn.textContent = "Clicks: " + clickCount;
-        // Show random cat image
-        const randomCat = catImages[Math.floor(Math.random() * catImages.length)];
-        catBox.innerHTML = `<img src="${randomCat}" alt="Cat Image">`;
-      } else {
-        // In flappy mode: flap bird
-        birdVelocity = -5;
-      }
+    randomBtn.addEventListener('click', () => {
+      clickCount++;
+      randomBtn.textContent = `Random (${clickCount})`;
+      const img = document.createElement('img');
+      img.src = catImages[Math.floor(Math.random() * catImages.length)];
+      img.alt = "Random Cat";
+      catContainer.innerHTML = '';
+      catContainer.appendChild(img);
     });
 
     /* ===== Flappy Bird game ===== */
     const canvas = document.getElementById('flappyCanvas');
     const ctx = canvas.getContext('2d');
-    let birdY, birdVelocity, pipes, score, gameLoop;
+    const startFlappyBtn = document.getElementById('startFlappy');
 
-    function startFlappyGame() {
-      birdY = 150;
+    let birdY = canvas.height / 2;
+    let birdVelocity = 0;
+    const gravity = 0.5;
+    let pipes = [];
+    let flappyRunning = false;
+    let animationId;
+
+    function resetGame() {
+      birdY = canvas.height / 2;
       birdVelocity = 0;
       pipes = [];
-      score = 0;
-      canvas.style.display = "block";
-      gameLoop = setInterval(updateFlappy, 20);
-    }
-
-    function stopFlappyGame() {
-      clearInterval(gameLoop);
-      canvas.style.display = "none";
-    }
-
-    function updateFlappy() {
-      birdVelocity += 0.2;
-      birdY += birdVelocity;
-
-      // Add pipes if none or last pipe passed threshold
-      if (pipes.length === 0 || pipes[pipes.length - 1].x < 120) {
-        const gapY = Math.random() * 150 + 50;
-        pipes.push({ x: 200, gapY });
+      // create initial pipes spaced out
+      for (let i = 0; i < 3; i++) {
+        const gapY = Math.random() * (canvas.height - 200) + 100;
+        pipes.push({ x: 300 + i * 200, gapY });
       }
-      // Move pipes left
-      pipes.forEach(p => p.x -= 2);
+    }
 
-      // Check collision & update score
-      pipes.forEach(p => {
-        if (p.x < 20 && p.x > 0) score++;
-        // Bird collision detection with pipes
-        if (
-          10 < p.x + 20 && 30 > p.x &&
-          (birdY < p.gapY - 40 || birdY > p.gapY + 40)
-        ) {
-          stopFlappyGame();
-          alert("Game Over! Score: " + score);
-          flappyMode = false;
-          rightBtn.textContent = "Clicks: " + clickCount;
-        }
+    function drawBird() {
+      ctx.fillStyle = 'yellow';
+      ctx.beginPath();
+      ctx.arc(50, birdY, 10, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    function drawPipes() {
+      ctx.fillStyle = 'green';
+      pipes.forEach(pipe => {
+        ctx.fillRect(pipe.x, 0, 40, pipe.gapY - 75);
+        ctx.fillRect(pipe.x, pipe.gapY + 75, 40, canvas.height - pipe.gapY - 75);
       });
+    }
 
-      // Clear canvas
+    function updateGame() {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-      // Draw bird (yellow square)
-      ctx.fillStyle = "yellow";
-      ctx.fillRect(10, birdY, 20, 20);
+      if (flappyRunning) {
+        birdVelocity += gravity;
+        birdY += birdVelocity;
 
-      // Draw pipes (green rectangles)
-      ctx.fillStyle = "green";
-      pipes.forEach(p => {
-        ctx.fillRect(p.x, 0, 20, p.gapY - 40);
-        ctx.fillRect(p.x, p.gapY + 40, 20, canvas.height - p.gapY - 40);
-      });
+        pipes.forEach(pipe => {
+          pipe.x -= 3;
+          if (pipe.x + 40 < 0) {
+            pipe.x = canvas.width + 100;
+            pipe.gapY = Math.random() * (canvas.height - 200) + 100;
+          }
+        });
+
+        // Collision detection
+        for (let pipe of pipes) {
+          if (
+            50 + 10 > pipe.x && 50 - 10 < pipe.x + 40 &&
+            (birdY - 10 < pipe.gapY - 75 || birdY + 10 > pipe.gapY + 75)
+          ) {
+            flappyRunning = false;
+            cancelAnimationFrame(animationId);
+            alert('Game Over!');
+            startFlappyBtn.textContent = 'Start Flappy Bird';
+            return;
+          }
+        }
+
+        // Prevent bird from going off-screen vertically
+        if (birdY + 10 > canvas.height || birdY - 10 < 0) {
+          flappyRunning = false;
+          cancelAnimationFrame(animationId);
+          alert('Game Over!');
+          startFlappyBtn.textContent = 'Start Flappy Bird';
+          return;
+        }
+      }
+
+      drawBird();
+      drawPipes();
+
+      if (flappyRunning) {
+        animationId = requestAnimationFrame(updateGame);
+      }
     }
 
-    /* Start/Stop Flappy Button */
-    const startFlappyBtn = document.getElementById('startFlappy');
     startFlappyBtn.addEventListener('click', () => {
-      if (!flappyMode) {
-        flappyMode = true;
-        clickCount = 0;
-        rightBtn.textContent = "Flap!";
-        startFlappyGame();
+      if (!flappyRunning) {
+        resetGame();
+        flappyRunning = true;
+        startFlappyBtn.textContent = 'Stop Flappy Bird';
+        updateGame();
       } else {
-        flappyMode = false;
-        stopFlappyGame();
-        rightBtn.textContent = "Clicks: " + clickCount;
+        flappyRunning = false;
+        cancelAnimationFrame(animationId);
+        startFlappyBtn.textContent = 'Start Flappy Bird';
       }
+    });
+
+    document.addEventListener('keydown', (e) => {
+      if (flappyRunning && e.code === 'Space') {
+        birdVelocity = -8;
+      }
+    });
+
+    /* ===== Floating bouncing text logic ===== */
+    const floatingText = document.getElementById('floatingText');
+    let posX = 50;
+    let posY = 50;
+    let velocityX = 2;
+    let velocityY = 2;
+
+    function animateFloatingText() {
+      const maxX = window.innerWidth - floatingText.offsetWidth;
+      const maxY = window.innerHeight - floatingText.offsetHeight;
+
+      posX += velocityX;
+      posY += velocityY;
+
+      if (posX <= 0 || posX >= maxX) velocityX = -velocityX;
+      if (posY <= 0 || posY >= maxY) velocityY = -velocityY;
+
+      floatingText.style.left = posX + 'px';
+      floatingText.style.top = posY + 'px';
+
+      requestAnimationFrame(animateFloatingText);
+    }
+    animateFloatingText();
+
+    window.addEventListener('resize', () => {
+      // no special logic needed
     });
   </script>
 

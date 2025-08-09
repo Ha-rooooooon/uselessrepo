@@ -1,15 +1,14 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="utf-8" />
-  <title>Combined Loading + Video + Flappy Bird + Cat Generator</title>
+  <title>Combined Loading + Video + Flappy Bird + Cat Generator + Bouncing Text</title>
   <style>
     /* === General styles === */
     html, body {
       height: 100%;
       margin: 0;
-      background: #111;
+      background: #373636;
       color: #fff;
       font-family: Arial, sans-serif;
       overflow-x: hidden;
@@ -47,7 +46,7 @@
     #loadingText {
       font-size: 16px;
       margin-top: 8px;
-      color: #1c857a;
+      color: #1bebd6;
       opacity: 1;
       transition: opacity 0.45s ease;
       text-align: center;
@@ -165,7 +164,7 @@
       border: 2px solid #fff;
       overflow: hidden;
       border-radius: 8px;
-      box-shadow: 0 0 8px #222;
+      box-shadow: 0 0 8px #302e2e;
       z-index: 50;
     }
     #catBox img {
@@ -173,6 +172,21 @@
       height: 100%;
       object-fit: cover;
       user-select: none;
+    }
+
+    /* === Floating text that bounces === */
+    #floatingText {
+      position: fixed;
+      top: 50px;
+      left: 50px;
+      font-size: 24px;
+      font-weight: bold;
+      color: #590bc6;
+      user-select: none;
+      pointer-events: none;
+      z-index: 150;
+      white-space: nowrap;
+      text-shadow: 1px 1px 2px rgb(25, 97, 222);
     }
   </style>
 </head>
@@ -201,6 +215,9 @@
 
   <!-- Cat Box -->
   <div id="catBox"></div>
+
+  <!-- Floating bouncing text -->
+  <div id="floatingText">LOADING...</div>
 
   <script>
     /* ===== Loading bar + messages ===== */
@@ -323,7 +340,6 @@
 
     /* ===== Cat images + Right button logic ===== */
     const catImages = [
-      // Replace these paths with actual URLs or local relative paths if hosted
       "https://placekitten.com/100/100",
       "https://placekitten.com/101/100",
       "https://placekitten.com/102/100"
@@ -421,6 +437,37 @@
         stopFlappyGame();
         rightBtn.textContent = "Clicks: " + clickCount;
       }
+    });
+
+    /* ===== Floating bouncing text logic ===== */
+    const floatingText = document.getElementById('floatingText');
+    let posX = 50;
+    let posY = 50;
+    let velocityX = 2; // px per frame
+    let velocityY = 2;
+    const textRect = floatingText.getBoundingClientRect();
+
+    function animateFloatingText() {
+      const maxX = window.innerWidth - floatingText.offsetWidth;
+      const maxY = window.innerHeight - floatingText.offsetHeight;
+
+      posX += velocityX;
+      posY += velocityY;
+
+      // Bounce off walls
+      if (posX <= 0 || posX >= maxX) velocityX = -velocityX;
+      if (posY <= 0 || posY >= maxY) velocityY = -velocityY;
+
+      floatingText.style.left = posX + "px";
+      floatingText.style.top = posY + "px";
+
+      requestAnimationFrame(animateFloatingText);
+    }
+    animateFloatingText();
+
+    // Also update bounding rect on resize to keep smooth bouncing
+    window.addEventListener('resize', () => {
+      // no special action needed, maxX and maxY computed dynamically each frame
     });
   </script>
 
