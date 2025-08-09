@@ -1,0 +1,109 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Loading with Dodging Skip Button</title>
+  <style>
+    body { margin:0; font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial; }
+    .overlay {
+      position: fixed; inset: 0; display:flex; align-items:center; justify-content:center;
+      background: linear-gradient(180deg,#0f172a,#0b1220); color:#fff; z-index:9999;
+      flex-direction:column; gap:20px;
+    }
+    .logo { font-size: clamp(20px, 4vw, 40px); font-weight:700; letter-spacing:1px; }
+    .spinner {
+      width:64px; height:64px; border-radius:50%; border:6px solid rgba(255,255,255,0.12);
+      border-top-color: rgba(255,255,255,0.9); animation: spin 1s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    #skipBtn {
+      position: absolute; padding:10px 16px; border-radius:8px; border:none;
+      background: rgba(255,255,255,0.95); color:#0b1220; font-weight:600;
+      cursor:pointer; user-select:none; transition: left 0.18s ease, top 0.18s ease;
+      box-shadow: 0 8px 20px rgba(2,6,23,0.6);
+    }
+    .hint { font-size:0.9rem; opacity:0.9; color:rgba(255,255,255,0.85) }
+    main { padding:40px; display:none; }
+    main.show { display:block; }
+  </style>
+</head>
+<body>
+
+  <div class="overlay" id="overlay" aria-live="polite">
+    <div class="logo">My Project</div>
+    <div class="spinner" aria-hidden="true"></div>
+    <div class="hint">Loading... You can skip (try to click the button!)</div>
+    <button id="skipBtn" aria-label="Skip loading">Skip</button>
+  </div>
+
+  <main id="content">
+    <h1>Welcome — main page content</h1>
+    <p>This is the real site content that shows after the loader hides.</p>
+  </main>
+
+<script>
+(function(){
+  const overlay = document.getElementById('overlay');
+  const skipBtn = document.getElementById('skipBtn');
+  const content = document.getElementById('content');
+
+  // Place button initially in center
+  function setInitialPos() {
+    const vw = window.innerWidth, vh = window.innerHeight;
+    skipBtn.style.left = (vw / 2 - skipBtn.offsetWidth / 2) + 'px';
+    skipBtn.style.top  = (vh / 2 - skipBtn.offsetHeight / 2) + 'px';
+  }
+  setInitialPos();
+  window.addEventListener('resize', setInitialPos);
+
+  // Auto hide after delay
+  const AUTO_HIDE_MS = 7500;
+  let autoHideTimer = setTimeout(hideOverlay, AUTO_HIDE_MS);
+
+  // Keyboard skip
+  window.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') hideOverlay();
+  });
+
+  // Click skip
+  skipBtn.addEventListener('click', hideOverlay);
+
+  // Mouse approach detection
+  window.addEventListener('mousemove', (e) => {
+    const rect = skipBtn.getBoundingClientRect();
+    const btnX = rect.left + rect.width / 2;
+    const btnY = rect.top + rect.height / 2;
+    const dist = Math.hypot(e.clientX - btnX, e.clientY - btnY);
+
+    if (dist < 120) moveButtonRandom();
+  });
+
+  // Touch devices
+  window.addEventListener('touchstart', () => {
+    moveButtonRandom();
+  }, {passive:true});
+
+  function moveButtonRandom() {
+    const vw = window.innerWidth, vh = window.innerHeight;
+    const btnW = skipBtn.offsetWidth, btnH = skipBtn.offsetHeight;
+    const margin = 10;
+    const newX = Math.random() * (vw - btnW - margin * 2) + margin;
+    const newY = Math.random() * (vh - btnH - margin * 2) + margin;
+    skipBtn.style.left = `${newX}px`;
+    skipBtn.style.top  = `${newY}px`;
+  }
+
+  function hideOverlay() {
+    clearTimeout(autoHideTimer);
+    overlay.style.transition = 'opacity 300ms ease';
+    overlay.style.opacity = '0';
+    setTimeout(() => {
+      overlay.remove();
+      content.classList.add('show');
+    }, 320);
+  }
+})();
+</script>
+</body>
+</html>
