@@ -2,7 +2,7 @@
 <html>
 <head>
   <meta charset="utf-8" />
-  <title>Loading Page — Fixed Skip Size</title>
+  <title>Loading Page — Fixed Skip Size with Jump</title>
   <style>
     html,body { height:100%; margin:0; background:#111; color:#fff; font-family: Arial, sans-serif; }
     .wrap {
@@ -38,7 +38,7 @@
     #loadingText {
       font-size:16px;
       margin-top:8px;
-      color:#ddd;
+      color:#1c857a;
       opacity:1;
       transition: opacity 0.45s ease;
       text-align:center;
@@ -49,28 +49,27 @@
     /* Skip button — fixed size so it never grows */
     #skipBtn {
       position:absolute;
-      bottom:40px;               /* initial bottom placement */
+      bottom:40px;
       left:50%;
-      transform:translateX(-50%);/* initial horizontal center */
-      width:120px;               /* FIXED width */
-      height:44px;               /* FIXED height */
-      padding:0;                 /* padding removed to keep exact size */
+      transform:translateX(-50%);
+      width:120px;
+      height:44px;
+      padding:0;
       display:inline-flex;
       align-items:center;
       justify-content:center;
       box-sizing:border-box;
-      background:#515151;
+      background:#392c2c;
       color:#fff;
       font-weight:600;
       font-size:15px;
       border:0;
       border-radius:8px;
       cursor:pointer;
-      transition: left 0.22s ease, top 0.22s ease; /* smooth moves */
+      transition: left 0.22s ease, top 0.22s ease;
       z-index: 50;
     }
 
-    /* small responsive tweaks */
     @media (max-width:420px){
       #skipBtn { width:100px; height:40px; font-size:14px; }
       .loading-bar { gap:4px; }
@@ -87,7 +86,7 @@
   <button id="skipBtn" aria-label="Skip">Skip</button>
 
 <script>
-/* ===== Loading bar + messages (10 segments, change text every 5 fills, loop) ===== */
+/* ===== Loading bar + messages ===== */
 const loadingBar = document.getElementById('loadingBar');
 const loadingText = document.getElementById('loadingText');
 
@@ -112,22 +111,19 @@ let segIndex = 0;
 let messageIndex = 0;
 
 function fillNextSegment(){
-  // fill current
   segments[segIndex].classList.add('filled');
 
-  // change message only when 5 segments are filled (i.e., at 5 and 10)
   if ((segIndex + 1) % 5 === 0) {
     loadingText.style.opacity = 0;
     setTimeout(() => {
       loadingText.textContent = messages[messageIndex];
       loadingText.style.opacity = 1;
-      messageIndex = (messageIndex + 1) % messages.length; // loop messages
+      messageIndex = (messageIndex + 1) % messages.length;
     }, 450);
   }
 
   segIndex++;
 
-  // when all filled -> clear and loop
   if (segIndex >= segments.length){
     setTimeout(() => {
       segments.forEach(s => s.classList.remove('filled'));
@@ -139,21 +135,17 @@ function fillNextSegment(){
 const FILL_INTERVAL = 800;
 let fillTimer = setInterval(fillNextSegment, FILL_INTERVAL);
 
-/* ===== Skip button: fixed-size, avoids getting bigger, runs away when cursor close ===== */
+/* ===== Skip button: jumps + runs away ===== */
 const skipBtn = document.getElementById('skipBtn');
-
-// Keep a cooldown so it doesn't jitter too fast
 let lastMove = 0;
 const MOVE_COOLDOWN_MS = 220;
 const AVOID_DISTANCE = 110;
 
-// Helper to move skip to a random safe position, keeping size constant
 function moveSkipRandom() {
   const now = Date.now();
   if (now - lastMove < MOVE_COOLDOWN_MS) return;
   lastMove = now;
 
-  // Get button size (fixed by CSS) and viewport limits
   const btnW = skipBtn.offsetWidth;
   const btnH = skipBtn.offsetHeight;
   const margin = 8;
@@ -164,19 +156,32 @@ function moveSkipRandom() {
   const randX = Math.floor(Math.random() * maxX) + margin;
   const randY = Math.floor(Math.random() * maxY) + margin;
 
-  // Remove initial translate transform (center) so left/top position is exact
-  skipBtn.style.transform = 'none';
-  skipBtn.style.left = randX + 'px';
-  skipBtn.style.top  = randY + 'px';
-  skipBtn.style.bottom = 'auto';
+  // Jump animation
+  skipBtn.animate(
+    [
+      { transform: 'translateY(0)' },
+      { transform: 'translateY(-15px)' },
+      { transform: 'translateY(0)' }
+    ],
+    {
+      duration: 200,
+      easing: 'ease-out'
+    }
+  );
+
+  // Move after jump ends
+  setTimeout(() => {
+    skipBtn.style.transform = 'none';
+    skipBtn.style.left = randX + 'px';
+    skipBtn.style.top  = randY + 'px';
+    skipBtn.style.bottom = 'auto';
+  }, 200);
 }
 
-// Move on touch as well
-window.addEventListener('touchstart', (e) => {
+window.addEventListener('touchstart', () => {
   moveSkipRandom();
 }, {passive:true});
 
-// Mouse avoidance
 document.addEventListener('mousemove', (e) => {
   const rect = skipBtn.getBoundingClientRect();
   const centerX = rect.left + rect.width/2;
@@ -188,14 +193,11 @@ document.addEventListener('mousemove', (e) => {
   if (dist < AVOID_DISTANCE) moveSkipRandom();
 });
 
-// Clicking Skip stops the loader (and the fill interval)
 skipBtn.addEventListener('click', () => {
   clearInterval(fillTimer);
-  // optionally hide or show something — here we just show an alert
   alert('Skipped!');
 });
 
-/* Keep button on-screen after window resize (if user resizes while skip was moved) */
 window.addEventListener('resize', () => {
   const rect = skipBtn.getBoundingClientRect();
   const maxX = window.innerWidth - rect.width - 8;
