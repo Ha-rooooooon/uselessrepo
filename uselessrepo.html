@@ -1,300 +1,362 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Loading Page + Flappy Bird + Cat Generator</title>
+  <meta charset="utf-8" />
+  <title>Loading + Flappy + Cats + Skip</title>
   <style>
-    body {
-      margin: 0;
-      font-family: Arial, sans-serif;
-      background-color: #111;
-      color: #fff;
-      height: 100vh;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-    }
-
-    /* ==== Loading Bar ==== */
-    .loading-bar {
-      display: flex;
-      gap: 4px;
-      margin-top: 20px;
-    }
-    .segment {
-      width: 20px;
-      height: 20px;
-      background-color: #444;
-      transition: background-color 0.3s ease;
-    }
-    .segment.filled {
-      background-color: rgb(104, 105, 104);
-    }
-    #loadingText {
-      font-size: 1.2em;
-      opacity: 0;
-      transition: opacity 0.5s ease;
-      margin-top: 10px;   
-    }
-
-    /* ==== Skip Button ==== */
-    #skipBtn {
-      position: absolute;
-      padding: 10px 20px;
-      background-color: rgb(129, 69, 81);
-      color: white;
-      border: none;
-      border-radius: 5px;
-      cursor: pointer;
-      font-size: 1em;
-      transition: top 0.3s, left 0.3s;
-    }
-
-    /* ==== Right Click Button ==== */
-    #rightBtn {
-      position: fixed;
-      right: 20px;
-      top: 50%;
-      transform: translateY(-50%);
-      padding: 10px 20px;
-      background: teal;
-      border: none;
-      border-radius: 5px;
-      cursor: pointer;
-      color: white;
-    }
-
-    /* ==== Cat Image Box ==== */
-    #catBox {
-      position: fixed;
-      bottom: 10px;
-      left: 10px;
-      width: 100px;
-      height: 100px;
-      border: 2px solid #fff;
-      overflow: hidden;
-    }
-    #catBox img {
-      width: 100%;
-      height: 100%;
-      object-fit: cover;
-    }
-
-    /* ==== Flappy Bird Container ==== */
-    #flappyContainer {
-      position: absolute;
-      left: 20px;
-      top: 200px;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-    }
-    #flappyCanvas {
-      background: skyblue;
-      display: none;
-    }
-    #startFlappy {
-      margin-bottom: 10px;
-      padding: 5px 15px;
-      background: orange;
-      border: none;
-      cursor: pointer;
-    }
+    html,body{height:100%;margin:0;background:#111;color:#fff;font-family:Arial,Helvetica,sans-serif}
+    /* Top loading */
+    .loading-container{width:100%;display:flex;flex-direction:column;align-items:center;padding-top:12px}
+    .loading-bar{display:flex;gap:6px;margin-bottom:6px}
+    .segment{width:22px;height:18px;background:#333;border-radius:3px;transition:background-color .25s}
+    .segment.filled{background:#bdbdbd}
+    #loadingText{font-size:1.05rem;opacity:0;transition:opacity .35s}
+    /* Main area */
+    .main{flex:1;display:flex;width:100%;align-items:stretch;position:relative;padding:20px;box-sizing:border-box}
+    /* Left flappy area */
+    #flappyArea{width:340px;flex:0 0 340px;padding:10px}
+    #startFlappy{display:inline-block;margin-bottom:10px;background:#ff9800;border:none;padding:8px 12px;border-radius:6px;color:#111;cursor:pointer}
+    #flappyCanvas{display:block;background:#70c5ce;border:2px solid #2b2b2b;border-radius:6px}
+    /* Middle reserved */
+    #middleReserved{flex:1;display:flex;align-items:center;justify-content:center;pointer-events:none}
+    /* Right controls */
+    #rightArea{width:220px;flex:0 0 220px;padding:10px;box-sizing:border-box;position:relative}
+    #randomBtn{position:absolute;right:20px;top:20px;padding:10px 14px;border-radius:6px;border:none;background:#607d8b;color:#fff;cursor:pointer}
+    /* cat display bottom-right */
+    #catContainer{position:fixed;right:16px;bottom:16px;width:150px;height:150px;border-radius:6px;overflow:hidden;border:2px solid #444;background:#000}
+    #catContainer img{width:100%;height:100%;object-fit:cover;display:block}
+    /* skip button bottom center */
+    #skipBtn{position:fixed;left:50%;bottom:18px;transform:translateX(-50%);padding:10px 18px;border:none;background:#812f3b;color:#fff;border-radius:6px;cursor:pointer;transition:left .18s ease,bottom .18s ease}
+    /* small helpers */
+    .note{font-size:0.85rem;color:#bbb;margin-top:6px}
   </style>
 </head>
 <body>
 
-  <!-- Loading bar + Skip -->
-  <div class="loading-bar" id="loadingBar"></div>
-  <div id="loadingText">Starting...</div>
-  <button id="skipBtn">Skip</button>
-
-  <!-- Flappy Bird Left Side -->
-  <div id="flappyContainer">
-    <button id="startFlappy">Start Flappy Bird</button>
-    <canvas id="flappyCanvas" width="200" height="300"></canvas>
+  <!-- Loading top -->
+  <div class="loading-container">
+    <div class="loading-bar" id="loadingBar"></div>
+    <div id="loadingText">Starting...</div>
   </div>
 
-  <!-- Right Button -->
-  <button id="rightBtn">Clicks: 0</button>
+  <!-- Main layout -->
+  <div class="main">
+    <!-- Left: flappy -->
+    <div id="flappyArea">
+      <button id="startFlappy">Start Flappy</button>
+      <canvas id="flappyCanvas" width="300" height="420"></canvas>
+      <div class="note">Flap with <strong>Spacebar</strong>. Press Start to begin.</div>
+    </div>
 
-  <!-- Cat Box -->
-  <div id="catBox"></div>
+    <!-- Middle reserved -->
+    <div id="middleReserved"></div>
 
-  <script>
-    /* ======================
-       LOADING BAR
-    ====================== */
-    const loadingBar = document.getElementById("loadingBar");
-    const loadingText = document.getElementById("loadingText");
-    const messages = [
-      "Almost there",
-      "Wait a minute",
-      "Getting close",
-      "We are nowhere there",
-      "Lost all hope",
-      "Do not give up"
-    ];
+    <!-- Right: random button -->
+    <div id="rightArea">
+      <button id="randomBtn">Random (0)</button>
+      <div class="note" style="position:absolute;right:20px;top:64px;text-align:right">Click to increment and show a cat image bottom-right.</div>
+    </div>
+  </div>
 
-    for (let i = 0; i < 10; i++) {
-      const seg = document.createElement("div");
-      seg.classList.add("segment");
-      loadingBar.appendChild(seg);
+  <!-- Cat image display -->
+  <div id="catContainer"></div>
+
+  <!-- Skip button -->
+  <button id="skipBtn">Skip</button>
+
+<script>
+/* ---------------------------
+   LOADING BAR (fill -> message -> reset -> repeat)
+   --------------------------- */
+const loadingBar = document.getElementById('loadingBar');
+const loadingText = document.getElementById('loadingText');
+
+const messages = [
+  "Almost there",
+  "Wait a minute",
+  "Getting close",
+  "We are nowhere there",
+  "Lost all hope",
+  "Do not give up"
+];
+
+// build segments
+const SEG_COUNT = 10;
+for (let i=0;i<SEG_COUNT;i++){
+  const d = document.createElement('div');
+  d.className = 'segment';
+  loadingBar.appendChild(d);
+}
+const segments = Array.from(document.querySelectorAll('.segment'));
+
+let msgIndex = 0;
+let loadingFillInterval = null;
+
+function runOneCycle(){
+  // ensure looping
+  if (msgIndex >= messages.length) msgIndex = 0;
+
+  // clear visual
+  segments.forEach(s => s.classList.remove('filled'));
+  loadingText.style.opacity = 0;
+
+  // delay small then show message text (after bar fills in this implementation it will already be visible)
+  setTimeout(()=> {
+    loadingText.textContent = messages[msgIndex];
+    loadingText.style.opacity = 1;
+  }, 300);
+
+  // fill segments one by one
+  let i = 0;
+  loadingFillInterval = setInterval(()=>{
+    if (i < segments.length) {
+      segments[i].classList.add('filled');
+      i++;
+    } else {
+      clearInterval(loadingFillInterval);
+      msgIndex++;
+      // short pause before starting next cycle (gives time to read)
+      setTimeout(runOneCycle, 900);
     }
-    const segments = document.querySelectorAll(".segment");
+  }, 180); // speed of filling (ms per segment)
+}
 
-    let segIndex = 0;
-    function fillNextSegment() {
-      if (segIndex < segments.length) {
-        segments[segIndex].classList.add("filled");
-        segIndex++;
-        if (segIndex === segments.length) {
-          // Show text after bar is completely filled
-          setTimeout(() => {
-            let msgIndex = 0;
-            const msgInterval = setInterval(() => {
-              loadingText.style.opacity = 0;
-              setTimeout(() => {
-                loadingText.textContent = messages[msgIndex];
-                loadingText.style.opacity = 1;
-              }, 500);
-              msgIndex++;
-              if (msgIndex >= messages.length) clearInterval(msgInterval);
-            }, 1500);
-          }, 500);
+// start
+runOneCycle();
+
+/* ---------------------------
+   SKIP BUTTON (runs away, stays in bottom-center region)
+   --------------------------- */
+const skipBtn = document.getElementById('skipBtn');
+// initial coordinates: centered bottom (handled by CSS transform)
+// We'll track logical left in px for smooth movement
+function getSkipBoxCenter(){
+  return { x: window.innerWidth/2, y: window.innerHeight - 60 };
+}
+skipBtn.style.left = (window.innerWidth/2) + 'px';
+skipBtn.style.bottom = '18px';
+skipBtn.style.transform = 'translateX(-50%)';
+
+document.addEventListener('mousemove', (e)=>{
+  const rect = skipBtn.getBoundingClientRect();
+  const centerX = rect.left + rect.width/2;
+  const centerY = rect.top + rect.height/2;
+  const dx = e.clientX - centerX;
+  const dy = e.clientY - centerY;
+  const dist = Math.sqrt(dx*dx + dy*dy);
+
+  const THRESH = 110; // distance threshold to trigger escape
+  if (dist < THRESH){
+    // compute new left within a constrained bottom-middle band
+    const bandCenterX = window.innerWidth/2;
+    const minX = Math.max(80, bandCenterX - 260);
+    const maxX = Math.min(window.innerWidth - 80, bandCenterX + 260);
+    // move left or right depending on mouse location
+    let newLeft;
+    if (e.clientX <= bandCenterX) {
+      newLeft = Math.min(maxX, bandCenterX + (Math.random()*140 + 60));
+    } else {
+      newLeft = Math.max(minX, bandCenterX - (Math.random()*140 + 60));
+    }
+    // random bottom within small vertical band
+    const minBottom = 14;
+    const maxBottom = 110;
+    const newBottom = Math.max(minBottom, Math.min(maxBottom, 14 + Math.random()*80));
+    // apply
+    skipBtn.style.left = `${newLeft}px`;
+    skipBtn.style.bottom = `${newBottom}px`;
+    skipBtn.style.transform = 'translate(0, 0)';
+  }
+});
+
+// optional click reaction
+skipBtn.addEventListener('click', ()=> {
+  // preserve the playful behavior but no blocking alerts
+  // small visual bounce
+  skipBtn.style.transform = 'translateY(-6px)';
+  setTimeout(()=> skipBtn.style.transform = 'translate(0, 0)', 120);
+});
+
+/* ---------------------------
+   RANDOM BUTTON + CAT IMAGES (bottom-right)
+   --------------------------- */
+const randomBtn = document.getElementById('randomBtn');
+const catContainer = document.getElementById('catContainer');
+let counter = 0;
+
+// Put your image filenames or full URLs here (replace placeholders)
+const catImages = [
+  "cat1.jpg",
+  "cat2.jpg",
+  "cat3.jpg",
+  // add more: "cats/cute1.png", "https://example.com/cat.jpg"
+];
+
+randomBtn.addEventListener('click', ()=>{
+  counter++;
+  randomBtn.textContent = `Random (${counter})`;
+  if (catImages.length === 0) {
+    catContainer.innerHTML = '<div style="color:#999;padding:12px;font-size:0.9rem">Add cat images in the JS array.</div>';
+    return;
+  }
+  const src = catImages[Math.floor(Math.random()*catImages.length)];
+  const img = new Image();
+  img.onload = () => {
+    catContainer.innerHTML = '';
+    catContainer.appendChild(img);
+  };
+  img.onerror = () => {
+    // fallback if image not found
+    catContainer.innerHTML = '<div style="color:#999;padding:6px">Image not found</div>';
+  };
+  img.src = src;
+});
+
+/* ---------------------------
+   FLAPPY BIRD (always visible, spacebar to flap)
+   --------------------------- */
+const canvas = document.getElementById('flappyCanvas');
+const ctx = canvas.getContext('2d');
+
+const BIRD_X = 70;          // x position of bird (fixed)
+let birdY = canvas.height/2;
+let birdVelocity = 0;
+let gravity = 0.32;         // slightly gentler gravity
+let flapPower = -6.6;       // flap strength
+let pipes = [];
+let flappyRunning = false;
+let pipeSpeed = 1.6;       // slower for easier demo
+let gapMin = 120;          // gap size min
+let lastTime = 0;
+
+function initPipes(){
+  pipes = [];
+  const spacing = 220;
+  for (let i=0;i<3;i++){
+    const x = canvas.width + i*spacing;
+    const gap = gapMin + Math.random()*40;
+    const top = Math.random()*(canvas.height - gap - 80) + 40;
+    const bottom = canvas.height - top - gap;
+    pipes.push({ x, top, bottom, gap });
+  }
+}
+
+// reset to idle state (drawn but not moving)
+function resetGame(){
+  birdY = canvas.height/2;
+  birdVelocity = 0;
+  initPipes();
+}
+
+// draw helpers
+function drawBackground(){
+  ctx.fillStyle = '#70c5ce';
+  ctx.fillRect(0,0,canvas.width,canvas.height);
+}
+function drawBird(){
+  ctx.save();
+  ctx.fillStyle = '#ffd54f';
+  ctx.beginPath();
+  ctx.arc(BIRD_X, birdY, 12, 0, Math.PI*2);
+  ctx.fill();
+  // small eye
+  ctx.fillStyle = '#222';
+  ctx.beginPath();
+  ctx.arc(BIRD_X+4, birdY-3, 2.6, 0, Math.PI*2);
+  ctx.fill();
+  ctx.restore();
+}
+function drawPipes(){
+  ctx.fillStyle = '#2e7d32';
+  pipes.forEach(p=>{
+    ctx.fillRect(p.x, 0, 34, p.top);
+    ctx.fillRect(p.x, canvas.height - p.bottom, 34, p.bottom);
+  });
+}
+function drawIdleText(){
+  if (!flappyRunning){
+    ctx.fillStyle = 'rgba(0,0,0,0.45)';
+    ctx.font = '14px Arial';
+    ctx.textAlign = 'center';
+    ctx.fillText('Press "Start Flappy" to play', canvas.width/2, 28);
+    ctx.fillText('Then press Space to flap', canvas.width/2, 46);
+  }
+}
+
+// main loop
+function gameLoop(ts){
+  const dt = ts - lastTime;
+  lastTime = ts;
+  // draw background
+  drawBackground();
+
+  // update if running
+  if (flappyRunning){
+    // physics
+    birdVelocity += gravity * (dt/16); // scale slightly with dt to keep consistent
+    birdY += birdVelocity * (dt/16);
+
+    // move pipes
+    for (let p of pipes){
+      p.x -= pipeSpeed * (dt/16);
+      if (p.x + 34 < 0){
+        // recycle pipe to right
+        p.x = canvas.width + Math.random()*40 + 40;
+        const gap = gapMin + Math.random()*40;
+        p.top = Math.random()*(canvas.height - gap - 80) + 40;
+        p.bottom = canvas.height - p.top - gap;
+        p.gap = gap;
+      }
+    }
+
+    // collisions
+    for (let p of pipes){
+      const birdTop = birdY - 12;
+      const birdBottom = birdY + 12;
+      if (BIRD_X > p.x && BIRD_X < p.x + 34){
+        if (birdTop < p.top || birdBottom > canvas.height - p.bottom){
+          // collision -> stop quietly
+          flappyRunning = false;
         }
       }
     }
-    setInterval(fillNextSegment, 800);
 
-    /* ======================
-       RUNAWAY SKIP BUTTON
-    ====================== */
-    const skipBtn = document.getElementById("skipBtn");
-    const centerX = window.innerWidth / 2 - skipBtn.offsetWidth / 2;
-    const centerY = window.innerHeight / 2 - skipBtn.offsetHeight / 2;
-    skipBtn.style.left = centerX + "px";
-    skipBtn.style.top = centerY + "px";
+    // keep bird in bounds
+    if (birdY > canvas.height - 12) { birdY = canvas.height - 12; birdVelocity = 0; flappyRunning = false; }
+    if (birdY < 12) { birdY = 12; birdVelocity = 0; }
+  }
 
-    document.addEventListener("mousemove", (e) => {
-      const btnRect = skipBtn.getBoundingClientRect();
-      const distX = e.clientX - (btnRect.left + btnRect.width / 2);
-      const distY = e.clientY - (btnRect.top + btnRect.height / 2);
-      const distance = Math.sqrt(distX * distX + distY * distY);
-      if (distance < 100) {
-        const randX = Math.random() * (window.innerWidth - skipBtn.offsetWidth);
-        const randY = Math.random() * (window.innerHeight - skipBtn.offsetHeight);
-        skipBtn.style.left = randX + "px";
-        skipBtn.style.top = randY + "px";
-      }
-    });
+  // draw bird & pipes (always visible)
+  drawPipes();
+  drawBird();
+  drawIdleText();
 
-    skipBtn.addEventListener("click", () => {
-      alert("Skipped!");
-    });
+  requestAnimationFrame(gameLoop);
+}
 
-    /* ======================
-       CAT IMAGE GENERATOR
-    ====================== */
-    const catImages = [
-      // ADD YOUR CAT IMAGE PATHS/URLs HERE
-      "cats/cat1.jpg",
-      "cats/cat2.jpg",
-      "cats/cat3.jpg"
-    ];
-    const catBox = document.getElementById("catBox");
-
-    /* ======================
-       RIGHT BUTTON
-    ====================== */
-    let clickCount = 0;
-    let flappyMode = false;
-    const rightBtn = document.getElementById("rightBtn");
-
-    rightBtn.addEventListener("click", () => {
-      if (!flappyMode) {
-        // Normal Mode
-        clickCount++;
-        rightBtn.textContent = "Clicks: " + clickCount;
-        const randomCat = catImages[Math.floor(Math.random() * catImages.length)];
-        catBox.innerHTML = `<img src="${randomCat}">`;
-      } else {
-        // Flappy Mode
-        birdVelocity = -5; // Jump
-      }
-    });
-
-    /* ======================
-       FLAPPY BIRD
-    ====================== */
-    const canvas = document.getElementById("flappyCanvas");
-    const ctx = canvas.getContext("2d");
-    let birdY, birdVelocity, pipes, score, gameLoop;
-
-    function startFlappyGame() {
-      birdY = 150;
-      birdVelocity = 0;
-      pipes = [];
-      score = 0;
-      gameLoop = setInterval(updateFlappy, 20);
+// spacebar flap
+document.addEventListener('keydown', (e)=>{
+  if (e.code === 'Space'){
+    if (flappyRunning){
+      birdVelocity = flapPower;
+      e.preventDefault();
     }
+  }
+});
 
-    function stopFlappyGame() {
-      clearInterval(gameLoop);
-    }
+// start button
+const startBtn = document.getElementById('startFlappy');
+startBtn.addEventListener('click', ()=>{
+  resetGame();
+  // give a small initial upward impulse for player to react
+  birdVelocity = flapPower * 0.8;
+  flappyRunning = true;
+});
 
-    function updateFlappy() {
-      birdVelocity += 0.2;
-      birdY += birdVelocity;
-
-      // Pipes
-      if (pipes.length === 0 || pipes[pipes.length - 1].x < 120) {
-        const gapY = Math.random() * 150 + 50;
-        pipes.push({ x: 200, gapY });
-      }
-      pipes.forEach(p => p.x -= 2);
-
-      // Collision & Score
-      pipes.forEach(p => {
-        if (p.x < 20 && p.x > 0) score++;
-        if (
-          10 < p.x + 20 && 30 > p.x && 
-          (birdY < p.gapY - 40 || birdY > p.gapY + 40)
-        ) {
-          stopFlappyGame();
-          alert("Game Over! Score: " + score);
-          flappyMode = false;
-          canvas.style.display = "none";
-        }
-      });
-
-      // Draw
-      ctx.clearRect(0, 0, 200, 300);
-      ctx.fillStyle = "yellow";
-      ctx.fillRect(10, birdY, 20, 20);
-      ctx.fillStyle = "green";
-      pipes.forEach(p => {
-        ctx.fillRect(p.x, 0, 20, p.gapY - 40);
-        ctx.fillRect(p.x, p.gapY + 40, 20, 300 - p.gapY - 40);
-      });
-    }
-
-    /* Start/Stop Button */
-    const startFlappyBtn = document.getElementById("startFlappy");
-    startFlappyBtn.addEventListener("click", () => {
-      if (!flappyMode) {
-        flappyMode = true;
-        clickCount = 0;
-        rightBtn.textContent = "Flap!";
-        canvas.style.display = "block";
-        startFlappyGame();
-      } else {
-        flappyMode = false;
-        stopFlappyGame();
-        canvas.style.display = "none";
-        rightBtn.textContent = "Clicks: " + clickCount;
-      }
-    });
-  </script>
+// initialize
+resetGame();
+requestAnimationFrame(gameLoop);
+</script>
 </body>
 </html>
  
